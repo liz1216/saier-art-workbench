@@ -1,0 +1,10 @@
+output/
+.DS_Store
+.env
+.env.*
+*.key
+*.pem
+node_modules/
+assets/head.glb
+.playwright/
+.playwright-cli/

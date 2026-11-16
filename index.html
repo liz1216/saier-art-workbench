@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="赛尔单头美术工作台：灯光、材质、相机和参数预览。">
+  <link rel="icon" href="data:,">
+  <title>赛尔·美术工作台</title>
+  <style>
+    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;background:#050607;color:#e8e8e8}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#050607}body{overflow:hidden}
+    button,input{font:inherit}button{border:1px solid #34383d;background:#121417;color:#eceff1;border-radius:8px;padding:8px 11px;cursor:pointer}button:hover{border-color:#7d858d}button:disabled{opacity:.38;cursor:not-allowed}
+    #workbench{height:100vh;display:grid;grid-template-rows:auto 1fr;position:relative;background:#050607}#workbench.clean{grid-template-rows:1fr}#workbench.clean header{display:none}
+    header{min-height:64px;height:auto;padding:12px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;border-bottom:1px solid #202428;background:#090a0c;z-index:5}
+    .brand{font-size:15px;letter-spacing:.14em;white-space:nowrap;min-width:0}.sub{font-size:11px;color:#8f969e;white-space:nowrap;min-width:0}.spacer{flex:1 1 12px;min-width:0}
+    #loadStatus{font-size:11px;color:#98a0a8;max-width:42vw;min-width:0;flex:1 1 160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#loadStatus[data-state=error]{color:#ff8a83}#loadStatus[data-state=ready]{color:#b8c3cb}
+    #viewport{position:relative;min-height:0;background:#000}#viewport iframe{border:0;display:block;width:100%;height:100%;background:#000}
+    #assetsPanel{position:absolute;left:18px;top:82px;width:300px;max-width:calc(100vw - 36px);padding:15px;border:1px solid #2b3035;border-radius:12px;background:rgba(10,11,13,.96);box-shadow:0 18px 50px rgba(0,0,0,.45);z-index:4}
+    #assetsPanel[hidden],#empty[hidden],#returnUI[hidden]{display:none}#assetsPanel h2{font-size:12px;font-weight:500;letter-spacing:.12em;margin:0 0 12px}.hint{font-size:11px;line-height:1.6;color:#8c939a;margin:0 0 12px}.assetrow{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:9px 0;border-top:1px solid #22272b}.assetrow strong{font-size:12px;font-weight:400}.assetrow small{grid-column:1/2;color:#737b84;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.assetrow button{grid-column:2;grid-row:1/3;align-self:center;padding:6px 9px}.eye-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #22272b}.eye-row label{font-size:11px;color:#aeb5bb}.eye-row select{width:100%;background:#121417;color:#e7eaed;border:1px solid #34383d;border-radius:6px;padding:6px}
+    #empty{position:absolute;inset:0;display:grid;place-items:center;z-index:2;pointer-events:none}.empty-card{pointer-events:auto;max-width:440px;margin:20px;padding:22px;border:1px solid #30363b;border-radius:12px;background:rgba(9,10,12,.93);text-align:center}.empty-card h1{font-size:17px;font-weight:500;margin:0 0 8px}.empty-card p{font-size:12px;line-height:1.7;color:#a8afb5;margin:0 0 16px}.empty-card button{margin:0 3px}
+    #dropTip{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.72);border:2px dashed #7d858d;z-index:10;font-size:16px;letter-spacing:.1em}body.drop-on #dropTip{display:grid}
+    #returnUI{position:fixed;right:16px;top:16px;z-index:8}#hiddenFile{display:none}
+    @media(max-width:760px){header{padding:9px 10px;gap:7px;align-content:center}.sub{display:none}.brand{font-size:13px;flex:1 1 auto}.spacer{display:none}#loadStatus{order:20;flex:1 1 100%;max-width:none;height:18px}.assetrow{padding:8px 0}#assetsPanel{left:10px;top:112px}}
+    @media(max-width:430px){header button{padding:6px 8px;font-size:11px}#assetsPanel{top:108px}}
+  </style>
+</head>
+<body>
+  <main id="workbench">
+    <header>
+      <span class="brand">赛尔 · 美术工作台</span><span class="sub">SINGLE HEAD / LOOK DEV</span><span class="spacer"></span>
+      <span id="loadStatus" data-state="loading">正在准备默认头模…</span>
+      <button id="assetsButton" type="button">素材</button>
+      <button id="controlsButton" type="button">调节</button>
+      <button id="importSettings" type="button">导入参数</button>
+      <button id="exportSettings" type="button" disabled>导出参数</button>
+      <button id="shotButton" type="button" disabled>截图</button>
+      <button id="hideButton" type="button">隐藏界面</button>
+    </header>
+    <section id="viewport" aria-label="赛尔单头预览"></section>
+    <aside id="assetsPanel" hidden>
+      <h2>本地素材</h2>
+      <p class="hint">默认头模与 ash 皮肤会自动加载。替换素材只在本机处理，不会上传。</p>
+      <div id="assetRows"></div>
+      <div class="eye-row"><label for="eye-human">眼睛贴图</label><select id="eye-human"></select></div>
+      <p class="hint" style="margin:12px 0 0">H 隐藏控制界面，Esc 恢复。GLB 需内嵌几何与默认材质。</p>
+    </aside>
+    <div id="empty" hidden><div class="empty-card"><h1>默认头模未能载入</h1><p id="emptyMessage">请检查 assets/head.glb.gz 与 assets/skin-default.png，或手动选择兼容 GLB。</p><button id="chooseFiles" type="button">选择头模或贴图</button></div></div>
+  </main>
+  <button id="returnUI" type="button" hidden>恢复界面（Esc）</button>
+  <div id="dropTip">松开以导入 GLB 或贴图</div>
+  <input id="hiddenFile" type="file" multiple accept=".glb,.png,.jpg,.jpeg,.webp">
+  <input id="settingsFile" type="file" accept="application/json,.json" hidden>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
